@@ -7,31 +7,31 @@ import ResearchOverlay from './chat/ResearchOverlay'
 import { EducationalResources, EducationalSummary } from '@/types'
 // Typography components will be implemented in next phase
 
-// Experience-based rotating prompts
+// THC-focused rotating prompts for Premo Cannabis
 const promptExamples = {
   new: [
-    "What is CBD and how does it work?",
-    "I'm new to hemp - where should I start?", 
-    "What's the difference between CBD and THC?",
-    "Are hemp products legal?",
-    "How do I know what dosage to take?",
-    "What's the difference between full spectrum and isolate?"
+    "What's the difference between indica and sativa?",
+    "I'm new to cannabis - where should I start?", 
+    "How much THC should a beginner try?",
+    "What are terpenes and why do they matter?",
+    "How long do edibles take to work?",
+    "What's the difference between flower and concentrates?"
   ],
   casual: [
-    "I can't sleep, what helps?",
+    "I can't sleep, what strain helps?",
     "What's best for stress relief?",
-    "I need something for after workouts",
-    "What helps with occasional anxiety?",
-    "Something for social situations?",
-    "Best products for daily wellness?"
+    "I need something for chronic pain",
+    "What helps with social anxiety?",
+    "Something energizing for daytime?",
+    "Best products for creativity?"
   ],
   experienced: [
-    "Looking for high-potency options",
-    "What are your premium terpene blends?",
-    "Any new cannabinoid products?",
-    "Best ratio for pain management?",
-    "What's your strongest sleep formula?",
-    "Any limited edition or craft products?"
+    "Looking for high-THC concentrates",
+    "What live resin do you have?",
+    "Any exotic strains available?",
+    "Best terp profiles for euphoria?",
+    "What's your strongest indica?",
+    "Any limited drops this week?"
   ],
   general: [
     "I can't sleep...",
@@ -47,7 +47,7 @@ const experienceLevels = [
   {
     id: 'new',
     label: 'New',
-    description: 'First time with hemp products',
+    description: 'First time with cannabis',
     icon: '🌱'
   },
   {
@@ -76,6 +76,15 @@ export default function SageApp() {
   const [educationalSummary, setEducationalSummary] = useState<EducationalSummary | null>(null)
   const [researchOverlayOpen, setResearchOverlayOpen] = useState(false)
   const [particles, setParticles] = useState<Array<{left: string, top: string, delay: string, duration: string}>>([])
+  const [ageVerified, setAgeVerified] = useState(false)
+
+  // Check age verification on mount
+  useEffect(() => {
+    const verified = typeof window !== 'undefined' && localStorage.getItem('age_verified_premo') === 'true'
+    if (verified) {
+      setAgeVerified(true)
+    }
+  }, [])
 
   // Initialize particles on client side only
   useEffect(() => {
@@ -100,24 +109,24 @@ export default function SageApp() {
   const [demoProducts, setDemoProducts] = useState([
     {
       id: 1,
-      name: "Night Time CBD Gummies",
-      description: "5mg CBD + 2mg CBN per gummy. Infused with lavender for peaceful sleep.",
-      price: "$28",
-      category: "Sleep"
+      name: "Purple Punch (Indica)",
+      description: "22.5% THC. Sweet grape and blueberry notes. Perfect for deep sleep and relaxation. Lab tested.",
+      price: "$55/eighth",
+      category: "Flower"
     },
     {
       id: 2, 
-      name: "Calm Tincture",
-      description: "Full spectrum CBD oil with chamomile. Start with 0.5ml under tongue.",
-      price: "$45",
-      category: "Tinctures"
+      name: "Sour Diesel (Sativa)",
+      description: "24.8% THC. Energizing diesel aroma. Great for daytime focus and creativity.",
+      price: "$60/eighth",
+      category: "Flower"
     },
     {
       id: 3,
-      name: "Dream Tea Blend", 
-      description: "Hemp flower tea with passionflower and lemon balm. Caffeine-free.",
-      price: "$18",
-      category: "Tea"
+      name: "Watermelon THC Gummies", 
+      description: "10mg THC per piece. 10 gummies per pack. Start with half for beginners.",
+      price: "$25",
+      category: "Edibles"
     }
   ])
 
@@ -250,6 +259,45 @@ export default function SageApp() {
     if (e.key === 'Enter') {
       handleSearch()
     }
+  }
+
+  // Age Verification Gate
+  if (!ageVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-900">
+        <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-8 shadow-2xl">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+              <Leaf className="w-10 h-10 text-green-600" />
+            </div>
+            <h2 className="text-3xl font-bold mb-2 text-gray-900">Age Verification Required</h2>
+            <p className="text-gray-600">Premo Cannabis • Keyport, NJ</p>
+            <p className="text-sm text-gray-500 mt-2">You must be 21+ to enter</p>
+          </div>
+          
+          <button
+            onClick={() => {
+              localStorage.setItem('age_verified_premo', 'true')
+              setAgeVerified(true)
+            }}
+            className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all mb-3"
+          >
+            I am 21 or older
+          </button>
+          
+          <button
+            onClick={() => window.location.href = 'https://www.google.com'}
+            className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+          >
+            I am under 21
+          </button>
+          
+          <p className="text-xs text-gray-500 text-center mt-6">
+            By entering, you agree to comply with NJ cannabis laws. Cannabis products have not been evaluated by the FDA.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -391,8 +439,9 @@ export default function SageApp() {
                   <div className="mb-6">
                     <p className="text-lg text-slate-200 font-medium"
                        style={{textShadow: '0 2px 4px rgba(0,0,0,0.4)'}}>
-                      Powered by <span className="text-emerald-300 font-semibold">Green Valley Hemp</span>
+                      Powered by <span className="text-emerald-300 font-semibold">Premo Cannabis</span>
                     </p>
+                    <p className="text-sm text-slate-300">📍 Keyport, NJ • 21+ Recreational</p>
                   </div>
                   
                   {/* Magical sparkles around the logo */}
@@ -408,7 +457,7 @@ export default function SageApp() {
                        fontFamily: 'var(--font-poppins), system-ui, sans-serif',
                        textShadow: '0 2px 6px rgba(0,0,0,0.4)'
                      }}>
-                    Your AI Hemp Guide
+                    Your AI Cannabis Consultant
                   </p>
                   <p className="text-xl text-slate-200 font-medium" 
                      style={{
