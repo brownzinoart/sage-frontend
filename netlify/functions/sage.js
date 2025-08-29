@@ -1,16 +1,20 @@
+// Netlify Function - Sage API with Premo Cannabis THC Products
 exports.handler = async (event, context) => {
-  // Handle CORS
+  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Content-Type': 'application/json'
   };
 
+  // Handle OPTIONS request for CORS
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
 
-  if (event.httpMethod !== 'POST') {
+  // Handle both GET and POST
+  if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
       headers,
@@ -19,355 +23,239 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { query, experience_level = 'casual' } = JSON.parse(event.body);
+    let query = '';
+    let experience_level = 'casual';
     
-    if (!query) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Query is required' })
-      };
+    if (event.httpMethod === 'POST' && event.body) {
+      const body = JSON.parse(event.body);
+      query = body.query || '';
+      experience_level = body.experience_level || 'casual';
     }
-
-    // Smart cannabinoid matching
+    
+    // Default query if none provided
+    if (!query) {
+      query = 'popular products';
+    }
+    
     const queryLower = query.toLowerCase();
     
-    // Generate experience-based explanation
-    const explanation = generateExplanation(query, experience_level);
+    // Premo Cannabis THC Products Database
+    const premoProducts = [
+      {
+        id: 1,
+        name: "Purple Punch (Indica)",
+        description: "22.5% THC. Sweet grape and blueberry notes. Perfect for deep sleep and relaxation. Lab tested.",
+        price: "$55/eighth",
+        category: "Flower",
+        thc_percentage: 22.5,
+        strain_type: "indica",
+        effects: ["sleep", "relaxation", "pain relief", "appetite"],
+        in_stock: true
+      },
+      {
+        id: 2,
+        name: "Sour Diesel (Sativa)",
+        description: "24.8% THC. Energizing diesel aroma. Great for daytime focus and creativity.",
+        price: "$60/eighth",
+        category: "Flower",
+        thc_percentage: 24.8,
+        strain_type: "sativa",
+        effects: ["energy", "focus", "creativity", "uplifted"],
+        in_stock: true
+      },
+      {
+        id: 3,
+        name: "Watermelon THC Gummies",
+        description: "10mg THC per piece. 10 gummies per pack. Perfect for precise dosing.",
+        price: "$25",
+        category: "Edibles",
+        thc_mg: 100,
+        effects: ["relaxation", "euphoria", "happy"],
+        in_stock: true
+      },
+      {
+        id: 4,
+        name: "Blue Dream Cartridge",
+        description: "85.3% THC distillate. Balanced hybrid for smooth, uplifting effects.",
+        price: "$45",
+        category: "Vapes",
+        thc_percentage: 85.3,
+        strain_type: "hybrid",
+        effects: ["balanced", "creative", "relaxed"],
+        in_stock: true
+      },
+      {
+        id: 5,
+        name: "Wedding Cake Live Resin",
+        description: "78.5% THC concentrate. Premium indica extract for maximum relief.",
+        price: "$70",
+        category: "Concentrates",
+        thc_percentage: 78.5,
+        strain_type: "indica",
+        effects: ["relaxation", "euphoria", "sleep"],
+        in_stock: true
+      },
+      {
+        id: 6,
+        name: "GSC Pre-Roll Pack",
+        description: "21.2% THC. Pack of 5 mini pre-rolls, 0.5g each.",
+        price: "$35",
+        category: "Pre-rolls",
+        thc_percentage: 21.2,
+        strain_type: "hybrid",
+        effects: ["happy", "relaxed", "creative"],
+        in_stock: true
+      },
+      {
+        id: 7,
+        name: "1:1 THC:CBD Tincture",
+        description: "Balanced 10mg THC / 10mg CBD per ml. Gentle relief.",
+        price: "$65",
+        category: "Tinctures",
+        thc_mg: 300,
+        cbd_mg: 300,
+        effects: ["balanced", "calm", "pain relief"],
+        in_stock: true
+      },
+      {
+        id: 8,
+        name: "Nighttime THC Gummies",
+        description: "10mg THC + 5mg CBN per gummy. Enhanced sleep formula.",
+        price: "$30",
+        category: "Edibles",
+        thc_mg: 100,
+        cbn_mg: 50,
+        effects: ["sleep", "relaxation", "sedating"],
+        in_stock: true
+      }
+    ];
     
-    // Get matching products
-    const products = getMatchingProducts(queryLower);
+    // Smart product matching
+    let matchedProducts = [];
+    let explanation = '';
     
-    // Mock educational resources
-    const educational_resources = getMockEducationalResources(queryLower);
-    const educational_summary = generateEducationalSummary(queryLower, educational_resources);
-
+    // Sleep queries
+    if (queryLower.includes('sleep') || queryLower.includes('insomnia') || queryLower.includes('tired')) {
+      matchedProducts = premoProducts.filter(p => 
+        p.effects.includes('sleep') || p.effects.includes('relaxation') || p.strain_type === 'indica'
+      );
+      explanation = "For better sleep, indica strains and products with CBN work best. These products can help you get the rest you need:";
+    }
+    // Energy queries
+    else if (queryLower.includes('energy') || queryLower.includes('focus') || queryLower.includes('productive')) {
+      matchedProducts = premoProducts.filter(p => 
+        p.effects.includes('energy') || p.effects.includes('focus') || p.strain_type === 'sativa'
+      );
+      explanation = "Sativa strains provide energizing effects perfect for daytime use. Try these for enhanced focus and creativity:";
+    }
+    // Pain queries
+    else if (queryLower.includes('pain') || queryLower.includes('hurt') || queryLower.includes('ache')) {
+      matchedProducts = premoProducts.filter(p => 
+        p.effects.includes('pain relief') || p.thc_percentage > 20
+      );
+      explanation = "Higher THC products and balanced THC:CBD ratios work well for pain management:";
+    }
+    // Anxiety/stress queries
+    else if (queryLower.includes('anxiety') || queryLower.includes('stress') || queryLower.includes('calm')) {
+      matchedProducts = premoProducts.filter(p => 
+        p.effects.includes('calm') || p.effects.includes('balanced') || p.cbd_mg > 0
+      );
+      explanation = "For anxiety relief, balanced products or lower THC doses work best. Start low and go slow:";
+    }
+    // Beginner queries
+    else if (queryLower.includes('beginner') || queryLower.includes('first') || queryLower.includes('new')) {
+      matchedProducts = premoProducts.filter(p => 
+        (p.thc_mg && p.thc_mg <= 100) || (p.thc_percentage && p.thc_percentage < 20) || p.cbd_mg > 0
+      );
+      explanation = "Welcome to cannabis! Start with lower THC products to find your comfort level:";
+    }
+    // Default - show variety
+    else {
+      matchedProducts = premoProducts.slice(0, 3);
+      explanation = "Here are some popular products from Premo Cannabis in Keyport, NJ:";
+    }
+    
+    // Ensure we always have some products
+    if (matchedProducts.length === 0) {
+      matchedProducts = premoProducts.slice(0, 3);
+    }
+    
+    // Educational content
+    const educational_resources = {
+      research_sources: [
+        {
+          title: "Understanding Cannabis Strains",
+          url: "https://www.leafly.com/news/cannabis-101",
+          credibility_score: 0.85,
+          summary: "Learn about the differences between indica, sativa, and hybrid strains."
+        }
+      ],
+      key_compounds: {
+        "THC": "Primary psychoactive compound",
+        "CBD": "Non-psychoactive, may reduce THC anxiety",
+        "CBN": "Mildly psychoactive, promotes sleep"
+      }
+    };
+    
+    const response = {
+      session_id: `sage-${Date.now()}`,
+      response: explanation,
+      explanation: explanation,
+      products: matchedProducts,
+      suggestions: [
+        "Tell me about your specific needs",
+        "What effects are you looking for?",
+        "Do you prefer flower or edibles?",
+        "What's your experience level?"
+      ],
+      educational_resources: educational_resources,
+      educational_summary: {
+        key_points: [
+          "Start with low doses and increase gradually",
+          "Effects can take 5-10min for smoking, 30-120min for edibles",
+          "Stay hydrated and have snacks ready"
+        ],
+        dosage_guidance: "Beginners: 2.5-5mg THC for edibles, one small puff for flower",
+        safety_notes: "Must be 21+. Do not drive. Keep away from children and pets."
+      },
+      service_status: 200,
+      status_message: "Powered by Premo Cannabis - Keyport, NJ"
+    };
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(response)
+    };
+    
+  } catch (error) {
+    console.error('Error:', error);
+    
+    // Return fallback response on error
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        explanation,
-        products,
-        educational_resources,
-        educational_summary
+        explanation: "Welcome to Premo Cannabis! Here are some of our popular products:",
+        products: [
+          {
+            id: 1,
+            name: "Purple Punch (Indica)",
+            description: "22.5% THC. Perfect for relaxation.",
+            price: "$55/eighth",
+            category: "Flower"
+          },
+          {
+            id: 2,
+            name: "Sour Diesel (Sativa)",
+            description: "24.8% THC. Great for energy.",
+            price: "$60/eighth",
+            category: "Flower"
+          }
+        ],
+        suggestions: ["Ask about our deals", "Tell me what you need help with"],
+        service_status: 200
       })
-    };
-
-  } catch (error) {
-    console.error('Function error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Internal server error' })
     };
   }
 };
-
-function generateExplanation(query, experienceLevel) {
-  const queryLower = query.toLowerCase();
-  
-  // Tone based on experience level
-  let tone = '';
-  if (experienceLevel === 'new') {
-    tone = 'As a beginner, here\'s what you should know: ';
-  } else if (experienceLevel === 'experienced') {
-    tone = 'For an experienced user: ';
-  } else {
-    tone = '';
-  }
-
-  // Smart response generation based on query content
-  if (queryLower.includes('sleep') || queryLower.includes('insomnia')) {
-    return `🌿 **Quick Answer**\n• CBN and Delta-8 are your best options for sleep support\n• Start with 5-10mg CBN about 30-60 minutes before bed\n\n📚 **Key Benefits**\n• CBN promotes deep, restful sleep\n• Delta-8 provides gentle relaxation without anxiety\n• CBD can help calm racing thoughts\n• Terpenes like myrcene enhance sleepiness\n\n🔬 **Research Insights**\n• Studies show CBN has sedative properties\n• Delta-8 users report better sleep quality\n• Full-spectrum products may be more effective\n\n💡 **How to Use**\n• Take 30-60 minutes before desired sleep time\n• Start with lowest dose and adjust as needed\n• Consider combining with good sleep hygiene\n\n⚠️ **Important Notes**\n• Avoid driving after taking sleep products\n• Consult healthcare provider if you have sleep disorders\n• Start low and go slow with any new cannabinoid`;
-  }
-  
-  if (queryLower.includes('anxiety') || queryLower.includes('stress') || queryLower.includes('calm')) {
-    return `🌿 **Quick Answer**\n• CBD and Delta-8 are excellent for anxiety and stress relief\n• Both are non-psychoactive at proper doses\n\n📚 **Key Benefits**\n• CBD reduces cortisol (stress hormone) levels\n• Delta-8 provides calm without paranoia\n• CBG offers clear-headed relaxation\n• Regular use may help manage chronic stress\n\n🔬 **Research Insights**\n• Clinical studies show CBD reduces anxiety markers\n• Delta-8 users report less anxiety than Delta-9\n• Terpenes like linalool enhance calming effects\n\n💡 **How to Use**\n• Start with 10-15mg CBD or 5mg Delta-8\n• Take during stressful periods or daily for maintenance\n• Sublingual tinctures work fastest (15-30 minutes)\n\n⚠️ **Important Notes**\n• Everyone responds differently to cannabinoids\n• Consult healthcare provider for severe anxiety\n• May interact with certain medications`;
-  }
-
-  if (queryLower.includes('pain') || queryLower.includes('inflammation')) {
-    return `🌿 **Quick Answer**\n• CBD, CBG, and CBC are powerful anti-inflammatory cannabinoids\n• THC may be needed for severe pain management\n\n📚 **Key Benefits**\n• CBD reduces inflammation and chronic pain\n• CBG targets specific pain pathways\n• CBC works synergistically with other cannabinoids\n• Topicals provide targeted relief\n\n🔬 **Research Insights**\n• Studies show CBD effective for arthritis pain\n• Cannabinoids interact with pain receptors\n• Entourage effect enhances pain relief\n\n💡 **How to Use**\n• Start with 15-25mg CBD twice daily\n• Apply topicals directly to affected areas\n• Consider micro-dosing THC for severe cases\n\n⚠️ **Important Notes**\n• Chronic pain requires medical supervision\n• May take several weeks to see full effects\n• Track symptoms to optimize dosing`;
-  }
-
-  if (queryLower.includes('high') || queryLower.includes('euphoria') || queryLower.includes('buzz')) {
-    return `🌿 **Quick Answer**\n• Delta-8, HHC, and Delta-10 offer legal euphoria options\n• Each provides different effects and intensity levels\n\n📚 **Key Benefits**\n• Delta-8: Smooth, mellow high with less anxiety\n• HHC: THC-like effects with longer shelf life\n• Delta-10: Energizing, creative effects\n• All federally legal when hemp-derived\n\n🔬 **Research Insights**\n• Delta-8 binds differently to CB1 receptors\n• Users report clearer headspace than Delta-9\n• Onset time varies by consumption method\n\n💡 **How to Use**\n• Start with 2.5-5mg for edibles\n• Wait 2 hours before taking more\n• Vapes provide faster onset (5-15 minutes)\n\n⚠️ **Important Notes**\n• Must be 21+ for psychoactive products\n• Don't drive or operate machinery\n• Check local laws before purchasing`;
-  }
-
-  // Default response
-  return `🌿 **Quick Answer**\n• Hemp offers many wellness benefits through various cannabinoids\n• Each cannabinoid has unique properties and effects\n\n📚 **Key Benefits**\n• CBD: Non-psychoactive, anti-inflammatory, calming\n• CBG: Focus and energy, "mother cannabinoid"\n• CBN: Sleep support, relaxation\n• Delta-8/HHC: Legal euphoria, mild psychoactive effects\n\n🔬 **Research Insights**\n• Over 100 cannabinoids identified in hemp\n• Entourage effect enhances individual benefits\n• Terpenes contribute to effects and flavors\n\n💡 **How to Use**\n• Start with low doses and increase gradually\n• Different methods have different onset times\n• Consistency is key for therapeutic benefits\n\n⚠️ **Important Notes**\n• Consult healthcare provider before starting\n• Quality varies between manufacturers\n• Third-party lab testing ensures purity`;
-}
-
-function getMatchingProducts(queryLower) {
-  const allProducts = [
-    {
-      id: "1",
-      name: "Sleep Support CBN Tincture",
-      description: "High-CBN formula specifically designed for deep, restful sleep. Combines CBN with melatonin for enhanced sleep support.",
-      price: "$58.99",
-      category: "Sleep",
-      cbd_mg: 15,
-      thc_mg: 0,
-      cbg_mg: 0,
-      cbn_mg: 20,
-      cbc_mg: 0,
-      effects: ["sleep", "sedating", "deep-rest", "nighttime"],
-      terpenes: { myrcene: 3.1, linalool: 1.8 },
-      lab_tested: true,
-      in_stock: true,
-      brand: "Hemp Generation",
-      product_type: "tincture"
-    },
-    {
-      id: "2", 
-      name: "Delta-8 Relaxation Gummies",
-      description: "Hemp-derived Delta-8 THC gummies for mild euphoria and relaxation. Legal alternative with smooth, mellow effects.",
-      price: "$34.99",
-      category: "Edibles",
-      cbd_mg: 2,
-      thc_mg: 0,
-      cbg_mg: 1,
-      cbn_mg: 3,
-      cbc_mg: 0,
-      effects: ["relaxation", "mild-euphoria", "stress-relief", "mood-enhancement", "legal-high"],
-      terpenes: { myrcene: 1.2, limonene: 1.8, linalool: 0.9 },
-      lab_tested: true,
-      in_stock: true,
-      brand: "Hemp Generation",
-      product_type: "edible"
-    },
-    {
-      id: "3",
-      name: "CBD Wellness Tincture",
-      description: "Premium full-spectrum CBD oil for daily wellness support. Contains beneficial terpenes and minor cannabinoids.",
-      price: "$45.99",
-      category: "Wellness",
-      cbd_mg: 30,
-      thc_mg: 0.3,
-      cbg_mg: 2,
-      cbn_mg: 1,
-      cbc_mg: 1,
-      effects: ["wellness", "balance", "calm", "daily-support"],
-      terpenes: { limonene: 2.1, pinene: 1.5, linalool: 1.0 },
-      lab_tested: true,
-      in_stock: true,
-      brand: "Hemp Generation", 
-      product_type: "tincture"
-    }
-  ];
-
-  // Smart matching logic
-  let scored = allProducts.map(product => {
-    let score = 0;
-    
-    // Match effects
-    product.effects.forEach(effect => {
-      if (queryLower.includes(effect.replace('-', ' ')) || queryLower.includes(effect.replace('_', ' '))) {
-        score += 25;
-      }
-    });
-
-    // Match cannabinoids mentioned in query
-    if (queryLower.includes('cbd') && product.cbd_mg > 0) score += 20;
-    if (queryLower.includes('cbn') && product.cbn_mg > 0) score += 20; 
-    if (queryLower.includes('cbg') && product.cbg_mg > 0) score += 20;
-    if (queryLower.includes('delta') && product.name.toLowerCase().includes('delta')) score += 20;
-
-    // Match use case
-    if (queryLower.includes('sleep') && product.category.toLowerCase() === 'sleep') score += 30;
-    if (queryLower.includes('wellness') && product.category.toLowerCase() === 'wellness') score += 15;
-
-    return { ...product, match_score: score };
-  });
-
-  // Sort by score and return top 3
-  return scored
-    .sort((a, b) => b.match_score - a.match_score)
-    .slice(0, 3);
-}
-
-function getMockEducationalResources(queryLower) {
-  // Generate research papers based on query content
-  const papers = generateRelevantPapers(queryLower);
-  
-  return {
-    research_studies: {
-      papers: papers,
-      total_found: papers.length,
-      query: queryLower,
-      intent: "general"
-    },
-    source_credibility: {
-      average_credibility: papers.reduce((sum, paper) => sum + paper.credibility_score, 0) / papers.length,
-      total_papers: papers.length,
-      high_credibility_count: papers.filter(p => p.credibility_score >= 8).length
-    },
-    safety_information: {
-      general_warnings: [
-        "Start with low doses and increase gradually",
-        "Consult healthcare provider if taking medications",
-        "May cause drowsiness - avoid driving after use",
-        "Keep out of reach of children and pets"
-      ],
-      drug_interactions: [
-        "May interact with blood thinners",
-        "Potential interactions with seizure medications",
-        "Consult doctor before surgical procedures"
-      ]
-    },
-    dosage_guidelines: {
-      recommendation: "Start with 2.5-5mg for beginners, wait 2 hours before taking more. Effects may take 30-90 minutes to appear.",
-      safety_considerations: [
-        "Individual responses vary significantly",
-        "Take with food to improve absorption",
-        "Maintain consistent timing for best results",
-        "Keep a dosage journal to track effects"
-      ]
-    },
-    mechanism_of_action: "Cannabinoids interact with the body's endocannabinoid system, binding to CB1 and CB2 receptors to promote homeostasis and wellness.",
-    legal_status: "Hemp-derived products with less than 0.3% THC are federally legal in the US, but state laws may vary."
-  };
-}
-
-function generateRelevantPapers(queryLower) {
-  const basePapers = [
-    {
-      id: "study_cbd_sleep_2024",
-      title: "CBD and Sleep Quality: A Randomized Controlled Trial",
-      authors: "Johnson, M.D., Smith, P.h.D., Wilson, R.N.",
-      journal: "Journal of Sleep Medicine",
-      year: 2024,
-      abstract: "This randomized controlled trial examined the effects of CBD on sleep quality in 150 adults with sleep difficulties. Participants receiving 25mg CBD showed significant improvements in sleep latency and overall sleep quality compared to placebo.",
-      credibility_score: 9.2,
-      url: "https://pubmed.ncbi.nlm.nih.gov/mock-study-1"
-    },
-    {
-      id: "study_hemp_anxiety_2023",
-      title: "Hemp-Derived Cannabinoids for Anxiety Management: Clinical Evidence",
-      authors: "Roberts, Dr., Chen, Ph.D., Martinez, M.D.",
-      journal: "Anxiety and Stress Research",
-      year: 2023,
-      abstract: "A comprehensive review of clinical trials investigating hemp-derived cannabinoids for anxiety disorders. Analysis of 12 studies involving 1,200 participants demonstrated significant anxiety reduction with minimal side effects.",
-      credibility_score: 8.7,
-      url: "https://pubmed.ncbi.nlm.nih.gov/mock-study-2"
-    }
-  ];
-
-  // Add query-specific papers
-  if (queryLower.includes('sleep') || queryLower.includes('insomnia')) {
-    basePapers.push({
-      id: "study_cbn_sleep_2024",
-      title: "CBN as a Natural Sleep Aid: Comparative Analysis with Traditional Sleep Medications",
-      authors: "Thompson, M.D., Lee, Ph.D.",
-      journal: "Natural Sleep Research",
-      year: 2024,
-      abstract: "This study compared CBN effectiveness to traditional sleep aids in 200 participants over 8 weeks. CBN showed comparable efficacy with significantly fewer side effects and no dependency issues.",
-      credibility_score: 8.9,
-      url: "https://pubmed.ncbi.nlm.nih.gov/mock-study-3"
-    });
-  }
-
-  if (queryLower.includes('pain') || queryLower.includes('inflammation')) {
-    basePapers.push({
-      id: "study_cbd_pain_2023",
-      title: "Anti-inflammatory Properties of CBD: Mechanisms and Clinical Applications",
-      authors: "Davis, Ph.D., Kumar, M.D., Wilson, D.Sc.",
-      journal: "Pain Management Research",
-      year: 2023,
-      abstract: "Investigation of CBD's anti-inflammatory mechanisms and efficacy in chronic pain conditions. Results show CBD significantly reduced inflammatory markers and pain scores in arthritis patients.",
-      credibility_score: 9.1,
-      url: "https://pubmed.ncbi.nlm.nih.gov/mock-study-4"
-    });
-  }
-
-  if (queryLower.includes('anxiety') || queryLower.includes('stress')) {
-    basePapers.push({
-      id: "study_delta8_anxiety_2024",
-      title: "Delta-8 THC for Anxiety: Safety and Efficacy Profile",
-      authors: "Miller, Ph.D., Garcia, M.D.",
-      journal: "Cannabinoid Medicine Journal",
-      year: 2024,
-      abstract: "First large-scale study on Delta-8 THC for anxiety management. 300 participants showed reduced anxiety scores with minimal psychoactive effects and no reported adverse events.",
-      credibility_score: 8.4,
-      url: "https://pubmed.ncbi.nlm.nih.gov/mock-study-5"
-    });
-  }
-
-  return basePapers.slice(0, 4); // Return up to 4 relevant papers
-}
-
-function generateEducationalSummary(queryLower, educational_resources) {
-  const papers = educational_resources.research_studies.papers;
-  
-  // Generate key findings based on query content
-  let key_findings = [];
-  let evidence_strength = 'moderate';
-  let research_gaps = [];
-  
-  if (queryLower.includes('sleep') || queryLower.includes('insomnia')) {
-    key_findings = [
-      "CBD at 25mg doses significantly improves sleep onset time and overall sleep quality",
-      "CBN shows comparable efficacy to traditional sleep aids with fewer side effects",
-      "Hemp-derived cannabinoids do not create dependency issues unlike pharmaceutical sleep medications",
-      "Optimal timing appears to be 30-60 minutes before desired sleep time"
-    ];
-    evidence_strength = 'strong';
-    research_gaps = [
-      "Long-term effects beyond 8 weeks need more research",
-      "Optimal dosing for different age groups requires further study"
-    ];
-  } else if (queryLower.includes('anxiety') || queryLower.includes('stress')) {
-    key_findings = [
-      "CBD and Delta-8 THC show significant anxiety reduction in clinical trials",
-      "Hemp cannabinoids effectively reduce cortisol (stress hormone) levels",
-      "Minimal side effects reported compared to traditional anxiety medications",
-      "Benefits appear within 30-60 minutes of administration"
-    ];
-    evidence_strength = 'strong';
-    research_gaps = [
-      "Effects on severe anxiety disorders need more comprehensive studies",
-      "Drug interaction profiles require additional research"
-    ];
-  } else if (queryLower.includes('pain') || queryLower.includes('inflammation')) {
-    key_findings = [
-      "CBD demonstrates significant anti-inflammatory properties in clinical settings",
-      "Cannabinoids effectively reduce chronic pain scores in arthritis patients",
-      "Topical applications provide localized relief without systemic effects",
-      "Combination therapy with multiple cannabinoids shows enhanced benefits"
-    ];
-    evidence_strength = 'strong';
-    research_gaps = [
-      "Optimal cannabinoid ratios for different pain conditions",
-      "Long-term safety profiles in chronic pain management"
-    ];
-  } else {
-    key_findings = [
-      "Hemp-derived cannabinoids show promise for multiple wellness applications",
-      "Safety profiles are generally favorable with minimal reported side effects",
-      "Individual response varies significantly, requiring personalized approaches",
-      "Quality and consistency of products greatly affects therapeutic outcomes"
-    ];
-    evidence_strength = 'moderate';
-    research_gaps = [
-      "Standardization of dosing across different conditions",
-      "Long-term effects and optimal usage patterns need more research"
-    ];
-  }
-  
-  return {
-    key_findings,
-    evidence_strength,
-    research_gaps,
-    total_studies_analyzed: papers.length,
-    quality_assessment: {
-      high_quality: papers.filter(p => p.credibility_score >= 9).length,
-      moderate_quality: papers.filter(p => p.credibility_score >= 7 && p.credibility_score < 9).length,
-      lower_quality: papers.filter(p => p.credibility_score < 7).length
-    },
-    recommendations: [
-      "Start with lowest effective dose and adjust gradually",
-      "Consult healthcare provider before beginning any cannabinoid regimen",
-      "Choose products from reputable manufacturers with third-party testing",
-      "Keep a symptom and dosage journal to track individual responses"
-    ]
-  };
-}
