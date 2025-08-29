@@ -172,7 +172,7 @@ export default function SageApp() {
       const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
       const backendUrl = 'http://localhost:5001/api/v1/sage/ask'
       
-      let apiUrl = isDevelopment ? '/api/sage' : '/.netlify/functions/sage'
+      let apiUrl = isDevelopment ? '/api/sage' : '/api/sage'
       let requestBody = { 
         query: searchQuery,
         experience_level: selectedExperience || 'casual'
