@@ -500,21 +500,27 @@ export default function SageApp() {
                       </p>
                       
                       {/* Magical experience level selector */}
-                      <div className="flex justify-center gap-3 opacity-80 hover:opacity-100 transition-opacity duration-500">
+                      <div className="flex justify-center gap-3 opacity-80 hover:opacity-100 transition-opacity duration-500 relative z-20">
                         {experienceLevels.map((level) => (
                           <button
                             key={level.id}
                             type="button"
-                            onClick={() => setSelectedExperience(level.id)}
-                            className={`group/level relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer ${
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log('Experience level clicked:', level.id)
+                              setSelectedExperience(level.id)
+                            }}
+                            className={`group/level relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer select-none touch-manipulation ${
                               selectedExperience === level.id
                                 ? 'bg-emerald-400/20 text-emerald-200 shadow-lg scale-105 border border-emerald-300/30'
                                 : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:scale-105 border border-white/20'
                             }`}
+                            style={{ pointerEvents: 'auto' }}
                           >
-                            <span className="relative z-10">{level.icon} {level.label}</span>
+                            <span className="relative z-10 pointer-events-none">{level.icon} {level.label}</span>
                             {selectedExperience === level.id && (
-                              <div className="absolute inset-0 bg-emerald-400/20 rounded-full animate-pulse"></div>
+                              <div className="absolute inset-0 bg-emerald-400/20 rounded-full animate-pulse pointer-events-none"></div>
                             )}
                           </button>
                         ))}
