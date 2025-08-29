@@ -5,6 +5,20 @@ const nextConfig = {
   trailingSlash: false,
   images: {
     unoptimized: true,
+  },
+  // Fix chunk loading issues on Railway
+  experimental: {
+    esmExternals: 'loose'
+  },
+  webpack: (config, { isServer }) => {
+    // Fix chunk loading for production builds
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      }
+    }
+    return config
   }
 }
 

@@ -1,10 +1,12 @@
-// Import the Netlify function logic
-const sageFunction = require('../../../../netlify/functions/sage.js');
+// Import the Netlify function logic using dynamic import to avoid CommonJS issues
 
 export async function POST(request) {
   try {
     // Get request body
     const body = await request.json();
+    
+    // Dynamic import to avoid CommonJS issues
+    const { handler } = await import('../../../../netlify/functions/sage.js');
     
     // Convert Next.js request to Netlify function format
     const netlifyEvent = {
@@ -14,7 +16,7 @@ export async function POST(request) {
     };
     
     // Call the Netlify function
-    const result = await sageFunction.handler(netlifyEvent, {});
+    const result = await handler(netlifyEvent, {});
     
     // Parse response body
     const responseData = JSON.parse(result.body);
